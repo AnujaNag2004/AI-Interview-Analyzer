@@ -1,4 +1,8 @@
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.platypus import (
+    SimpleDocTemplate,
+    Paragraph,
+    Spacer
+)
 from reportlab.lib.styles import getSampleStyleSheet
 from datetime import datetime
 import os
@@ -15,6 +19,7 @@ def generate_pdf_report(
     improvements
 ):
 
+    # Create reports folder if not present
     os.makedirs("reports", exist_ok=True)
 
     pdf_path = "reports/interview_report.pdf"
@@ -25,15 +30,21 @@ def generate_pdf_report(
 
     story = []
 
+    # --------------------------------------------------
+    # Title
+    # --------------------------------------------------
     story.append(
         Paragraph(
-            "AI Interview Analysis Report",
+            "Interview Performance Report",
             styles["Title"]
         )
     )
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Date and Time
+    # --------------------------------------------------
     story.append(
         Paragraph(
             f"Generated On: {datetime.now().strftime('%d-%m-%Y %H:%M')}",
@@ -43,6 +54,9 @@ def generate_pdf_report(
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Question
+    # --------------------------------------------------
     story.append(
         Paragraph(
             "Interview Question",
@@ -59,6 +73,9 @@ def generate_pdf_report(
 
     story.append(Spacer(1, 10))
 
+    # --------------------------------------------------
+    # Candidate Response
+    # --------------------------------------------------
     story.append(
         Paragraph(
             "Candidate Response",
@@ -75,6 +92,9 @@ def generate_pdf_report(
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Metrics
+    # --------------------------------------------------
     story.append(
         Paragraph(
             "Evaluation Metrics",
@@ -98,16 +118,50 @@ def generate_pdf_report(
 
     story.append(
         Paragraph(
-            f"Overall Score: {overall_score:.2f}/100",
+            f"Overall Interview Score: {overall_score:.2f}/100",
             styles["BodyText"]
         )
     )
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Performance Category
+    # --------------------------------------------------
+    if overall_score >= 85:
+        performance = "Excellent"
+
+    elif overall_score >= 70:
+        performance = "Good"
+
+    elif overall_score >= 50:
+        performance = "Average"
+
+    else:
+        performance = "Needs Improvement"
+
     story.append(
         Paragraph(
-            "AI Feedback",
+            "Performance Summary",
+            styles["Heading2"]
+        )
+    )
+
+    story.append(
+        Paragraph(
+            f"Performance Level: <b>{performance}</b>",
+            styles["BodyText"]
+        )
+    )
+
+    story.append(Spacer(1, 20))
+
+    # --------------------------------------------------
+    # Feedback
+    # --------------------------------------------------
+    story.append(
+        Paragraph(
+            "Feedback",
             styles["Heading2"]
         )
     )
@@ -122,6 +176,9 @@ def generate_pdf_report(
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Strengths
+    # --------------------------------------------------
     story.append(
         Paragraph(
             "Strengths",
@@ -139,6 +196,9 @@ def generate_pdf_report(
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Improvements
+    # --------------------------------------------------
     story.append(
         Paragraph(
             "Areas for Improvement",
@@ -156,43 +216,64 @@ def generate_pdf_report(
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Recruiter Remarks
+    # --------------------------------------------------
+    if overall_score >= 85:
+        recruiter_remark = (
+            "Candidate demonstrated excellent communication "
+            "skills and strong understanding of the topic."
+        )
+
+    elif overall_score >= 70:
+        recruiter_remark = (
+            "Candidate showed good understanding with minor "
+            "areas for improvement."
+        )
+
+    elif overall_score >= 50:
+        recruiter_remark = (
+            "Candidate demonstrated average performance and "
+            "would benefit from more detailed responses."
+        )
+
+    else:
+        recruiter_remark = (
+            "Candidate requires improvement in both technical "
+            "depth and communication effectiveness."
+        )
+
     story.append(
         Paragraph(
-            "Recruiter Notes",
+            "Recruiter Remarks",
             styles["Heading2"]
         )
     )
 
     story.append(
         Paragraph(
-            "_____________________________________",
-            styles["BodyText"]
-        )
-    )
-
-    story.append(
-        Paragraph(
-            "_____________________________________",
-            styles["BodyText"]
-        )
-    )
-
-    story.append(
-        Paragraph(
-            "_____________________________________",
+            recruiter_remark,
             styles["BodyText"]
         )
     )
 
     story.append(Spacer(1, 20))
 
+    # --------------------------------------------------
+    # Final Note
+    # --------------------------------------------------
     story.append(
         Paragraph(
-            "Note: This report is generated using AI and should be used as an assistive evaluation tool.",
+            "Note: The evaluation is based on communication "
+            "effectiveness, response quality and interview "
+            "performance indicators.",
             styles["BodyText"]
         )
     )
 
+    # --------------------------------------------------
+    # Build PDF
+    # --------------------------------------------------
     doc.build(story)
 
     return pdf_path
