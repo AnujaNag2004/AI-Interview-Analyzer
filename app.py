@@ -40,25 +40,11 @@ st.markdown("""
     margin-bottom:30px;
 }
 
-.metric-card{
-    background:#1e293b;
-    padding:25px;
-    border-radius:20px;
-    border:1px solid #334155;
-}
-
 .transcript-box{
     background:#111827;
     padding:20px;
     border-radius:15px;
     border:1px solid #334155;
-}
-
-.score-box{
-    text-align:center;
-    padding:20px;
-    border-radius:20px;
-    background:#1e293b;
 }
 
 div.stButton > button{
@@ -88,6 +74,7 @@ def load_models():
     similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
     return whisper_model, similarity_model
 
+
 whisper_model, similarity_model = load_models()
 
 # --------------------------------------------------
@@ -113,7 +100,7 @@ col1, col2 = st.columns(2)
 with col1:
     question = st.text_input(
         "💼 Interview Question",
-        placeholder="Example: Tell me about yourself"
+        placeholder="Example: Explain Machine Learning"
     )
 
 with col2:
@@ -139,14 +126,16 @@ if st.button("🚀 Analyze Interview"):
 
     try:
 
+        # Save audio temporarily
         with tempfile.NamedTemporaryFile(
-                delete=False,
-                suffix=".wav"
+            delete=False,
+            suffix=".wav"
         ) as temp_file:
 
             temp_file.write(uploaded_file.read())
             temp_audio_path = temp_file.name
 
+        # Whisper Transcription
         with st.spinner("🎙️ Transcribing audio using Whisper..."):
             result = whisper_model.transcribe(
                 temp_audio_path,
@@ -155,6 +144,7 @@ if st.button("🚀 Analyze Interview"):
 
         transcript = result["text"]
 
+        # NLP Similarity
         question_embedding = similarity_model.encode([question])
         answer_embedding = similarity_model.encode([transcript])
 
@@ -165,9 +155,107 @@ if st.button("🚀 Analyze Interview"):
 
         relevance_percentage = score * 100
 
-        # ---------------------------------------
+        # -----------------------------------------
+        # Speaking Speed
+        # -----------------------------------------
+        word_count = len(transcript.split())
+
+        duration_seconds = result["segments"][-1]["end"]
+
+        speaking_speed = int(
+            (word_count / duration_seconds) * 60
+        )
+
+        # -----------------------------------------
+        # Overall Score
+        # -----------------------------------------
+        overall_score = (
+            relevance_percentage * 0.8
+            + min(speaking_speed, 150) * 0.2
+        )
+
+        if overall_score > 100:
+            overall_score = 100
+
+        # -----------------------------------------
+        # Feedback
+        # -----------------------------------------
+        feedback = []
+
+        if relevance_percentage >= 85:
+            feedback.append(
+                "The candidate demonstrated strong understanding of the topic."
+            )
+
+        elif relevance_percentage >= 70:
+            feedback.append(
+                "The answer was relevant but could include more depth and examples."
+            )
+
+        else:
+            feedback.append(
+                "The answer lacked sufficient relevance to the question."
+            )
+
+        if speaking_speed < 100:
+            feedback.append(
+                "The candidate spoke slower than average."
+            )
+
+        elif speaking_speed > 160:
+            feedback.append(
+                "The candidate spoke faster than ideal."
+            )
+
+        else:
+            feedback.append(
+                "The speaking pace was appropriate."
+            )
+
+        # -----------------------------------------
+        # Strengths
+        # -----------------------------------------
+        strengths = []
+
+        if relevance_percentage >= 70:
+            strengths.append("Relevant answer.")
+
+        if 100 <= speaking_speed <= 160:
+            strengths.append("Good speaking pace.")
+
+        if len(strengths) == 0:
+            strengths.append(
+                "Candidate attempted the answer confidently."
+            )
+
+        # -----------------------------------------
+        # Improvements
+        # -----------------------------------------
+        improvements = []
+
+        if relevance_percentage < 70:
+            improvements.append(
+                "Provide more detailed and structured explanations."
+            )
+
+        if speaking_speed > 160:
+            improvements.append(
+                "Reduce speaking speed slightly."
+            )
+
+        if speaking_speed < 100:
+            improvements.append(
+                "Increase speaking pace slightly."
+            )
+
+        if len(improvements) == 0:
+            improvements.append(
+                "Continue maintaining communication quality."
+            )
+
+        # -----------------------------------------
         # Transcript
-        # ---------------------------------------
+        # -----------------------------------------
         st.markdown("## 📝 Transcript")
 
         st.markdown(
@@ -179,14 +267,12 @@ if st.button("🚀 Analyze Interview"):
             unsafe_allow_html=True
         )
 
-        st.write("")
-
-        # ---------------------------------------
-        # Score Card
-        # ---------------------------------------
+        # -----------------------------------------
+        # Metrics
+        # -----------------------------------------
         st.markdown("## 📊 Analysis Results")
 
-        col1, col2 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
 
         with col1:
             st.metric(
@@ -195,44 +281,76 @@ if st.button("🚀 Analyze Interview"):
             )
 
         with col2:
-            if relevance_percentage >= 85:
-                st.success("Excellent Answer ✅")
-                final_feedback = "Excellent"
+            st.metric(
+                "Speaking Speed",
+                f"{speaking_speed} WPM"
+            )
 
-            elif relevance_percentage >= 70:
-                st.info("Good Answer 👍")
-                final_feedback = "Good"
+        with col3:
+            st.metric(
+                "Overall Score",
+                f"{overall_score:.2f}/100"
+            )
 
-            elif relevance_percentage >= 50:
-                st.warning("Average Answer ⚠️")
-                final_feedback = "Average"
+        # -----------------------------------------
+        # Performance Badge
+        # -----------------------------------------
+        if overall_score >= 85:
+            st.success("🌟 Excellent Interview Performance")
 
-            else:
-                st.error("Needs Improvement ❌")
-                final_feedback = "Needs Improvement"
+        elif overall_score >= 70:
+            st.info("👍 Good Interview Performance")
 
-        # ---------------------------------------
+        elif overall_score >= 50:
+            st.warning("⚠️ Average Interview Performance")
+
+        else:
+            st.error("❌ Needs Improvement")
+
+        # -----------------------------------------
+        # Feedback Display
+        # -----------------------------------------
+        st.markdown("## 🤖 AI Feedback")
+
+        for item in feedback:
+            st.write("•", item)
+
+        st.markdown("## ✅ Strengths")
+
+        for item in strengths:
+            st.write("•", item)
+
+        st.markdown("## 📌 Areas for Improvement")
+
+        for item in improvements:
+            st.write("•", item)
+
+        # -----------------------------------------
         # Generate PDF
-        # ---------------------------------------
+        # -----------------------------------------
         pdf_path = generate_pdf_report(
             question,
             transcript,
-            relevance_percentage
+            relevance_percentage,
+            speaking_speed,
+            overall_score,
+            feedback,
+            strengths,
+            improvements
         )
 
-        st.write("")
-        st.success("Interview report generated successfully!")
+        st.success("📄 Interview report generated successfully!")
 
         with open(pdf_path, "rb") as pdf_file:
             st.download_button(
-                label="📄 Download Interview Report",
+                label="📥 Download Interview Report",
                 data=pdf_file,
                 file_name="interview_report.pdf",
                 mime="application/pdf"
             )
 
     except Exception as e:
-        st.error(f"Error: {e}")
+        st.error(f"Error occurred: {e}")
 
     finally:
         if (
@@ -244,5 +362,5 @@ if st.button("🚀 Analyze Interview"):
 st.divider()
 
 st.caption(
-    "Built using OpenAI Whisper • Sentence Transformers • Streamlit"
+    "Built with Whisper • Sentence Transformers • Streamlit • ReportLab"
 )
