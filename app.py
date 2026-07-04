@@ -1,19 +1,25 @@
 import streamlit as st
-import whisper # type: ignore
-from sentence_transformers import SentenceTransformer # type: ignore
-from sklearn.metrics.pairwise import cosine_similarity # type: ignore
+import whisper
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+import tempfile
 import os
 
+# ---------------------------
 # Load models only once
+# ---------------------------
 @st.cache_resource
 def load_models():
     whisper_model = whisper.load_model("base")
     similarity_model = SentenceTransformer("all-MiniLM-L6-v2")
     return whisper_model, similarity_model
 
+
 whisper_model, similarity_model = load_models()
 
+# ---------------------------
 # Page configuration
+# ---------------------------
 st.set_page_config(
     page_title="AI Interview Analyzer",
     page_icon="🎤",
@@ -23,77 +29,90 @@ st.set_page_config(
 st.title("🎤 AI Interview Analyzer")
 st.write("Analyze candidate interview responses using AI and NLP")
 
-# Interview question input
+# ---------------------------
+# Inputs
+# ---------------------------
 question = st.text_input(
     "Enter Interview Question"
 )
 
-# Audio upload
 uploaded_file = st.file_uploader(
     "Upload Candidate Audio Answer (.wav)",
     type=["wav"]
 )
 
+# ---------------------------
+# Analyze Button
+# ---------------------------
 if st.button("Analyze Interview"):
 
     if question.strip() == "":
         st.warning("Please enter an interview question.")
-    
+
     elif uploaded_file is None:
         st.warning("Please upload an audio file.")
-    
+
     else:
-        # Save uploaded audio temporarily
-        with open("temp_audio.wav", "wb") as f:
-            f.write(uploaded_file.read())
 
-        st.info("Transcribing audio...")
+        try:
+            # Save uploaded file temporarily
+            with tempfile.NamedTemporaryFile(
+                delete=False,
+                suffix=".wav"
+            ) as temp_file:
 
-        # Speech to text
-        result = whisper_model.transcribe(
-            "temp_audio.wav",
-            language="en"
-        )
+                temp_file.write(uploaded_file.read())
+                temp_audio_path = temp_file.name
 
-        transcript = result["text"]
+            st.info("Transcribing audio...")
 
-        st.subheader("Transcript")
-        st.write(transcript)
+            # Speech-to-text using Whisper
+            result = whisper_model.transcribe(
+                temp_audio_path,
+                language="en"
+            )
 
-        # NLP similarity analysis
-        question_embedding = similarity_model.encode([question])
-        answer_embedding = similarity_model.encode([transcript])
+            transcript = result["text"]
 
-        score = cosine_similarity(
-            question_embedding,
-            answer_embedding
-        )[0][0]
+            st.subheader("Transcript")
+            st.write(transcript)
 
-        relevance_percentage = score * 100
+            # Similarity Analysis
+            question_embedding = similarity_model.encode([question])
+            answer_embedding = similarity_model.encode([transcript])
 
-        st.subheader("Analysis Results")
+            score = cosine_similarity(
+                question_embedding,
+                answer_embedding
+            )[0][0]
 
-        st.metric(
-            "Relevance Score",
-            f"{relevance_percentage:.2f}%"
-        )
+            relevance_percentage = score * 100
 
-        # Feedback
-        if relevance_percentage >= 85:
-            st.success("Excellent Answer ✅")
+            st.subheader("Analysis Results")
 
-        elif relevance_percentage >= 70:
-            st.info("Good Answer 👍")
+            st.metric(
+                "Relevance Score",
+                f"{relevance_percentage:.2f}%"
+            )
 
-        elif relevance_percentage >= 50:
-            st.warning("Average Answer ⚠️")
+            # Feedback
+            if relevance_percentage >= 85:
+                st.success("Excellent Answer ✅")
 
-        else:
-            st.error("Needs Improvement ❌")
+            elif relevance_percentage >= 70:
+                st.info("Good Answer 👍")
 
-        # Remove temporary file
-        if os.path.exists("temp_audio.wav"):
-            os.remove("temp_audio.wav")
+            elif relevance_percentage >= 50:
+                st.warning("Average Answer ⚠️")
 
-    
+            else:
+                st.error("Needs Improvement ❌")
+
+        except Exception as e:
+            st.error(f"Error occurred: {e}")
+
+        finally:
+            # Delete temporary file
+            if 'temp_audio_path' in locals() and os.path.exists(temp_audio_path):
+                os.remove(temp_audio_path)
             
