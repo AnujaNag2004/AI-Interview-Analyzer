@@ -12,36 +12,21 @@ def generate_pdf_report(question, transcript, relevance_score):
     styles = getSampleStyleSheet()
     story = []
 
-    story.append(
-        Paragraph("AI Interview Report", styles['Title'])
-    )
-
+    story.append(Paragraph("AI Interview Report", styles["Title"]))
     story.append(Spacer(1, 20))
 
-    story.append(
-        Paragraph("Interview Question", styles['Heading2'])
-    )
-
-    story.append(
-        Paragraph(question, styles['BodyText'])
-    )
-
+    story.append(Paragraph("Question", styles["Heading2"]))
+    story.append(Paragraph(question, styles["BodyText"]))
     story.append(Spacer(1, 10))
 
-    story.append(
-        Paragraph("Candidate Answer", styles['Heading2'])
-    )
-
-    story.append(
-        Paragraph(transcript, styles['BodyText'])
-    )
-
+    story.append(Paragraph("Candidate Answer", styles["Heading2"]))
+    story.append(Paragraph(transcript, styles["BodyText"]))
     story.append(Spacer(1, 10))
 
     story.append(
         Paragraph(
             f"Relevance Score: {relevance_score:.2f}%",
-            styles['BodyText']
+            styles["BodyText"]
         )
     )
 
