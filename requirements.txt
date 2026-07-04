@@ -1,9 +1,9 @@
 streamlit
 openai-whisper
-torch
 sentence-transformers
 scikit-learn
-numpy
-pandas
-streamlit-audiorecorder
+reportlab
+torch
+torchvision
+torchaudio
 ffmpeg-python
